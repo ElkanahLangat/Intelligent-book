@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+@layer base {
+  /* Default Professional Polish Light Canvas */
+  :root {
+    --bg-primary: #FDFDFD;
+    --text-primary: #0f172a;
+    --border-color: #e2e8f0;
+  }
+
+  /* Sepia warm mode */
+  .theme-sepia {
+    --bg-primary: #f5efe6;
+    --text-primary: #33271d;
+    --border-color: #ded1bf;
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+  }
+
+  .theme-sepia .bg-white {
+    background-color: #fdfbf7 !important;
+  }
+
+  .theme-sepia .bg-slate-50,
+  .theme-sepia .bg-stone-50 {
+    background-color: #ece3d3 !important;
+  }
+
+  /* Professional Polish Slate Dark Mode */
+  .theme-dark {
+    --bg-primary: #0b1120;
+    --text-primary: #f8fafc;
+    --border-color: #1e293b;
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+  }
+
+  .theme-dark .bg-white {
+    background-color: #0f172a !important;
+  }
+
+  .theme-dark .bg-slate-50,
+  .theme-dark .bg-stone-50 {
+    background-color: #131d31 !important;
+  }
+
+  /* OLED Midnight Mode */
+  .theme-midnight {
+    --bg-primary: #000000;
+    --text-primary: #f1f5f9;
+    --border-color: #1e293b;
+    background-color: var(--bg-primary) !important;
+    color: var(--text-primary) !important;
+  }
+
+  .theme-midnight .bg-white,
+  .theme-midnight .bg-slate-50,
+  .theme-midnight .bg-stone-50 {
+    background-color: #080d1a !important;
+  }
+}
+
+/* Smooth reading scroll */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Custom scrollbars with slate polish */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.35);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.6);
+}
+
