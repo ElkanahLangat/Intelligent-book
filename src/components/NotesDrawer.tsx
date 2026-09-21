@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { HighlightItem, Chapter } from '../types';
-import { Bookmark, Trash2, Download, Copy, Check, X, FileText, Plus, Tag, Sparkles } from 'lucide-react';
+import { Bookmark, Trash2, Download, Copy, Check, X, FileText, Plus, Tag, Sparkles, Mic, Square } from 'lucide-react';
+import { useVoiceRecorder } from '../utils/useVoiceRecorder';
 
 interface Props {
   highlights: HighlightItem[];
@@ -32,6 +33,20 @@ export const NotesDrawer: React.FC<Props> = ({
   const [newNoteText, setNewNoteText] = useState<string>('');
   const [newNoteCategory, setNewNoteCategory] = useState<string>('Startup');
   const [newNoteColor, setNewNoteColor] = useState<'yellow' | 'green' | 'blue' | 'purple'>('green');
+
+  // Audio voice transcription hook for notes
+  const {
+    isRecording,
+    isTranscribing,
+    duration,
+    error: voiceError,
+    startRecording,
+    stopRecording
+  } = useVoiceRecorder((transcribedText) => {
+    if (transcribedText) {
+      setNewNoteText(prev => prev ? `${prev} ${transcribedText}` : transcribedText);
+    }
+  });
 
   if (!isOpen) return null;
 
@@ -208,30 +223,71 @@ export const NotesDrawer: React.FC<Props> = ({
               ))}
             </div>
 
-            <textarea
-              rows={2}
-              value={newNoteText}
-              onChange={(e) => setNewNoteText(e.target.value)}
-              placeholder="Record your observation, habit commitment, money rule, or startup insight..."
-              className="w-full p-2.5 rounded-lg bg-[#070d1e] text-slate-100 border border-slate-700 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
-              autoFocus
-            />
-
-            <div className="flex items-center justify-end gap-2">
+            <div className="relative">
+              <textarea
+                rows={3}
+                value={newNoteText}
+                onChange={(e) => setNewNoteText(e.target.value)}
+                placeholder="Record your observation, habit commitment, money rule, or tap mic to speak..."
+                className="w-full p-2.5 pr-9 rounded-lg bg-[#070d1e] text-slate-100 border border-slate-700 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+                autoFocus
+              />
               <button
                 type="button"
-                onClick={() => setShowAddForm(false)}
-                className="px-3 py-1 rounded text-xs text-slate-400 hover:text-white cursor-pointer"
+                onClick={isRecording ? stopRecording : startRecording}
+                disabled={isTranscribing}
+                className={`absolute right-2 bottom-3 p-1.5 rounded-lg transition-colors cursor-pointer ${
+                  isRecording
+                    ? 'bg-red-600 text-white animate-pulse'
+                    : 'text-slate-400 hover:text-white hover:bg-slate-800'
+                }`}
+                title={isRecording ? 'Stop voice recording' : 'Dictate note with microphone (Audio Transcription)'}
               >
-                Cancel
+                {isRecording ? <Square className="w-3.5 h-3.5 fill-current" /> : <Mic className="w-3.5 h-3.5" />}
               </button>
-              <button
-                type="submit"
-                disabled={!newNoteText.trim()}
-                className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition-colors disabled:opacity-40 cursor-pointer shadow-xs"
-              >
-                Save Record
-              </button>
+            </div>
+
+            {(isRecording || isTranscribing) && (
+              <div className="px-2 py-1 bg-red-950/60 rounded border border-red-800/80 text-[10px] text-red-200 flex items-center justify-between animate-pulse">
+                <span>{isRecording ? `Recording voice memo (${duration}s)...` : 'Transcribing voice note with Gemini...'}</span>
+                {isRecording && (
+                  <button
+                    type="button"
+                    onClick={stopRecording}
+                    className="font-bold underline text-red-100 cursor-pointer"
+                  >
+                    Done
+                  </button>
+                )}
+              </div>
+            )}
+
+            {voiceError && (
+              <div className="text-[10px] text-amber-400 px-1">
+                {voiceError}
+              </div>
+            )}
+
+            <div className="flex items-center justify-between gap-2 pt-1">
+              <span className="text-[10px] text-slate-400 flex items-center gap-1">
+                <Mic className="w-3 h-3 text-blue-400" /> Voice notes supported
+              </span>
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setShowAddForm(false)}
+                  className="px-3 py-1 rounded text-xs text-slate-400 hover:text-white cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={!newNoteText.trim()}
+                  className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition-colors disabled:opacity-40 cursor-pointer shadow-xs"
+                >
+                  Save Record
+                </button>
+              </div>
             </div>
           </form>
         )}

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { ReadingPreferences, ReadingTheme, FontFamily, FontSize, UserStats } from '../types';
+import { User as FirebaseUser } from 'firebase/auth';
 import {
   Menu,
   Search,
@@ -15,7 +16,11 @@ import {
   Flame,
   Target,
   TrendingUp,
-  Sparkles
+  Sparkles,
+  LogIn,
+  LogOut,
+  ShieldCheck,
+  CloudCheck
 } from 'lucide-react';
 
 interface Props {
@@ -36,6 +41,9 @@ interface Props {
   onOpenCaseStudies: () => void;
   onOpenStats: () => void;
   notesCount: number;
+  currentUser?: FirebaseUser | null;
+  onSignInWithGoogle?: () => void;
+  onSignOut?: () => void;
 }
 
 export const Header: React.FC<Props> = ({
@@ -55,9 +63,13 @@ export const Header: React.FC<Props> = ({
   onOpenChecklist,
   onOpenCaseStudies,
   onOpenStats,
-  notesCount
+  notesCount,
+  currentUser,
+  onSignInWithGoogle,
+  onSignOut
 }) => {
   const [showTypographyMenu, setShowTypographyMenu] = useState<boolean>(false);
+  const [showUserMenu, setShowUserMenu] = useState<boolean>(false);
 
   const progressPercent = Math.round((completedChaptersCount / Math.max(1, totalChapters)) * 100);
 
@@ -360,6 +372,105 @@ export const Header: React.FC<Props> = ({
                         </button>
                       ))}
                     </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Firebase Authentication: Google Sign-in & Profile */}
+          <div className="relative">
+            {currentUser ? (
+              <button
+                type="button"
+                onClick={() => setShowUserMenu(!showUserMenu)}
+                className="flex items-center gap-1.5 p-1 sm:px-2.5 sm:py-1 rounded-full border border-blue-500/40 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 hover:border-blue-500 transition-all cursor-pointer shadow-xs"
+                title={`Signed in as ${currentUser.displayName || currentUser.email}`}
+              >
+                {currentUser.photoURL ? (
+                  <img
+                    src={currentUser.photoURL}
+                    alt={currentUser.displayName || 'User'}
+                    className="w-6 h-6 rounded-full object-cover ring-1 ring-blue-400"
+                    referrerPolicy="no-referrer"
+                  />
+                ) : (
+                  <div className="w-6 h-6 rounded-full bg-blue-600 text-white font-bold text-xs flex items-center justify-center">
+                    {(currentUser.displayName || currentUser.email || 'U')[0].toUpperCase()}
+                  </div>
+                )}
+                <span className="text-xs font-semibold hidden md:inline truncate max-w-[100px]">
+                  {currentUser.displayName?.split(' ')[0] || 'Founder'}
+                </span>
+                <span className="w-2 h-2 rounded-full bg-emerald-500 ring-2 ring-white dark:ring-slate-900" title="Firestore Realtime Sync Active" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={onSignInWithGoogle}
+                className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold flex items-center gap-1.5 transition-colors border border-slate-300 dark:border-slate-700 cursor-pointer shadow-xs"
+                title="Sign in with Google to sync highlights and progress to Firebase"
+              >
+                <LogIn className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                <span className="hidden sm:inline">Sign In</span>
+              </button>
+            )}
+
+            {/* User Account Popover */}
+            {showUserMenu && currentUser && (
+              <>
+                <div
+                  className="fixed inset-0 z-40"
+                  onClick={() => setShowUserMenu(false)}
+                />
+                <div className="absolute right-0 mt-2 w-64 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-2xl p-4 z-50 text-xs space-y-3 font-sans">
+                  <div className="flex items-center gap-3 pb-3 border-b border-slate-200 dark:border-slate-800">
+                    {currentUser.photoURL ? (
+                      <img
+                        src={currentUser.photoURL}
+                        alt="Profile"
+                        className="w-10 h-10 rounded-full ring-2 ring-blue-500"
+                        referrerPolicy="no-referrer"
+                      />
+                    ) : (
+                      <div className="w-10 h-10 rounded-full bg-blue-600 text-white font-bold flex items-center justify-center text-sm">
+                        {(currentUser.displayName || currentUser.email || 'U')[0].toUpperCase()}
+                      </div>
+                    )}
+                    <div className="overflow-hidden">
+                      <div className="font-bold text-slate-800 dark:text-white truncate">
+                        {currentUser.displayName || 'Founder'}
+                      </div>
+                      <div className="text-[11px] text-slate-400 truncate">
+                        {currentUser.email}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between px-2 py-1.5 rounded-lg bg-emerald-50 dark:bg-emerald-950/30 text-emerald-800 dark:text-emerald-300 text-[11px] font-medium border border-emerald-200 dark:border-emerald-800">
+                    <div className="flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                      <span>Firestore Sync</span>
+                    </div>
+                    <span className="font-bold text-[10px] uppercase">Active</span>
+                  </div>
+
+                  <p className="text-[10px] text-slate-400 leading-normal px-1">
+                    Your highlights, notes, and reading progress are synced securely across all your devices using Firebase Auth and Firestore.
+                  </p>
+
+                  <div className="pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setShowUserMenu(false);
+                        if (onSignOut) onSignOut();
+                      }}
+                      className="w-full py-1.5 px-3 rounded-lg bg-slate-100 hover:bg-red-50 dark:bg-slate-800 dark:hover:bg-red-950/40 text-slate-700 hover:text-red-600 dark:text-slate-300 dark:hover:text-red-400 text-xs font-semibold flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+                    >
+                      <LogOut className="w-3.5 h-3.5" />
+                      <span>Sign Out</span>
+                    </button>
                   </div>
                 </div>
               </>

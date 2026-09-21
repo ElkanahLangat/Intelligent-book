@@ -1,0 +1,61 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User profile with display name and preferences",
+      "type": "object",
+      "properties": {
+        "uid": { "type": "string" },
+        "email": { "type": "string" },
+        "displayName": { "type": "string" },
+        "photoURL": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "lastActiveAt": { "type": "string" }
+      },
+      "required": ["uid", "email"]
+    },
+    "UserHighlight": {
+      "title": "UserHighlight",
+      "description": "User book highlights and personal reflections",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "chapterId": { "type": "string" },
+        "paragraphIndex": { "type": "number" },
+        "text": { "type": "string" },
+        "color": { "type": "string", "enum": ["yellow", "green", "blue", "purple"] },
+        "note": { "type": "string" },
+        "createdAt": { "type": "number" },
+        "userId": { "type": "string" }
+      },
+      "required": ["id", "chapterId", "text", "color", "userId"]
+    },
+    "UserProgress": {
+      "title": "UserProgress",
+      "description": "User reading progress across chapters",
+      "type": "object",
+      "properties": {
+        "chapterId": { "type": "string" },
+        "completed": { "type": "boolean" },
+        "scrollPercentage": { "type": "number" },
+        "updatedAt": { "type": "number" },
+        "userId": { "type": "string" }
+      },
+      "required": ["chapterId", "completed", "userId"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "UserProfile",
+      "description": "Root user profile document"
+    },
+    "/users/{userId}/highlights/{highlightId}": {
+      "schema": "UserHighlight",
+      "description": "User saved highlights and notes"
+    },
+    "/users/{userId}/progress/{chapterId}": {
+      "schema": "UserProgress",
+      "description": "User reading progress by chapter"
+    }
+  }
+}

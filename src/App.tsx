@@ -26,6 +26,21 @@ import { ValidationChecklistModal } from './components/ValidationChecklistModal'
 import { CaseStudiesModal } from './components/CaseStudiesModal';
 import { UserStatsModal } from './components/UserStatsModal';
 
+// Firebase Auth & Firestore Realtime Integration
+import { User, onAuthStateChanged } from 'firebase/auth';
+import {
+  auth,
+  testFirestoreConnection,
+  signInWithGoogle,
+  logOut,
+  syncUserProfile,
+  subscribeToUserHighlights,
+  saveHighlightToFirestore,
+  removeHighlightFromFirestore,
+  subscribeToUserProgress,
+  saveProgressToFirestore
+} from './services/firebase';
+
 const STORAGE_KEYS = {
   PREFS: 'startup_ebook_preferences_v1',
   HIGHLIGHTS: 'startup_ebook_highlights_v1',
@@ -103,6 +118,9 @@ export default function App() {
     }
   });
 
+  // Firebase Authentication & Firestore Sync State
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+
   // UI Modal / Drawer States
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(false);
   const [isNotesOpen, setIsNotesOpen] = useState<boolean>(false);
@@ -114,6 +132,45 @@ export default function App() {
   const [isCaseStudiesOpen, setIsCaseStudiesOpen] = useState<boolean>(false);
   const [isStatsOpen, setIsStatsOpen] = useState<boolean>(false);
   const [currentAudioParagraphIndex, setCurrentAudioParagraphIndex] = useState<number>(0);
+
+  // Test Firestore Connection & Listen to Auth State
+  useEffect(() => {
+    testFirestoreConnection();
+
+    let unsubscribeHighlights: (() => void) | null = null;
+    let unsubscribeProgress: (() => void) | null = null;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, async (user) => {
+      setCurrentUser(user);
+
+      if (user) {
+        syncUserProfile(user);
+
+        // Realtime Firestore sync for Highlights & Notes
+        unsubscribeHighlights = subscribeToUserHighlights(user.uid, (firestoreHighlights) => {
+          if (firestoreHighlights && firestoreHighlights.length > 0) {
+            setHighlights(firestoreHighlights);
+          }
+        });
+
+        // Realtime Firestore sync for Completed Chapters
+        unsubscribeProgress = subscribeToUserProgress(user.uid, (completedChapterIds) => {
+          if (completedChapterIds && completedChapterIds.length > 0) {
+            setUserStats(prev => ({
+              ...prev,
+              completedChapters: Array.from(new Set([...prev.completedChapters, ...completedChapterIds]))
+            }));
+          }
+        });
+      }
+    });
+
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeHighlights) unsubscribeHighlights();
+      if (unsubscribeProgress) unsubscribeProgress();
+    };
+  }, []);
 
   // Sync current chapter to storage
   useEffect(() => {
@@ -258,6 +315,22 @@ export default function App() {
     setPreferences(prev => ({ ...prev, ...updated }));
   };
 
+  const handleSignIn = async () => {
+    try {
+      await signInWithGoogle();
+    } catch (err) {
+      console.warn('Google sign-in cancelled or failed:', err);
+    }
+  };
+
+  const handleSignOutUser = async () => {
+    try {
+      await logOut();
+    } catch (err) {
+      console.warn('Sign out error:', err);
+    }
+  };
+
   const handleAddHighlight = (item: Omit<HighlightItem, 'id' | 'createdAt'>) => {
     const newItem: HighlightItem = {
       ...item,
@@ -265,10 +338,20 @@ export default function App() {
       createdAt: new Date().toISOString()
     };
     setHighlights(prev => [newItem, ...prev]);
+
+    // Firestore persistence
+    if (currentUser) {
+      saveHighlightToFirestore(currentUser.uid, newItem);
+    }
   };
 
   const handleDeleteHighlight = (id: string) => {
     setHighlights(prev => prev.filter(h => h.id !== id));
+
+    // Firestore persistence
+    if (currentUser) {
+      removeHighlightFromFirestore(currentUser.uid, id);
+    }
   };
 
   const handleToggleChecklistItem = (id: string) => {
@@ -295,6 +378,12 @@ export default function App() {
       const nextList = isAlready
         ? prev.completedChapters.filter(id => id !== chapterId)
         : [...prev.completedChapters, chapterId];
+
+      // Firestore persistence
+      if (currentUser) {
+        saveProgressToFirestore(currentUser.uid, chapterId, !isAlready);
+      }
+
       return {
         ...prev,
         completedChapters: nextList
@@ -345,6 +434,9 @@ export default function App() {
         onOpenCaseStudies={() => setIsCaseStudiesOpen(true)}
         onOpenStats={() => setIsStatsOpen(true)}
         notesCount={highlights.length}
+        currentUser={currentUser}
+        onSignInWithGoogle={handleSignIn}
+        onSignOut={handleSignOutUser}
       />
 
       {/* Main Layout Container */}

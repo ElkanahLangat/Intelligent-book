@@ -1,6 +1,6 @@
 {
-  "name": "Startup Lessons: The Founder's Playbook",
-  "description": "An interactive digital ebook and tactical manual for founders featuring essential startup lessons, chapter highlights, audio narration, interactive frameworks, bookmarks, notes, and an AI founder mentor.",
-  "requestFramePermissions": [],
+  "name": "Startup Lessons: The Founder's Field Manual",
+  "description": "An interactive digital eBook and tactical manual for founders featuring essential startup lessons, chapter highlights, audio narration, interactive frameworks, custom knowledge base, speech-to-text audio transcription, live Google Search grounding, and multi-turn AI advisor.",
+  "requestFramePermissions": ["microphone"],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
 }
