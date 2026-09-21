@@ -5,7 +5,15 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
 import { CHAPTERS, EBOOK_METADATA } from './data/chaptersData';
-import { Chapter, ReadingPreferences, HighlightItem, UserStats } from './types';
+import { INITIAL_VALIDATION_CHECKLIST, DETAILED_CASE_STUDIES } from './data/checklistAndCaseStudies';
+import {
+  Chapter,
+  ReadingPreferences,
+  HighlightItem,
+  UserStats,
+  ChecklistItem,
+  DetailedCaseStudy
+} from './types';
 import { Header } from './components/Header';
 import { Sidebar } from './components/Sidebar';
 import { Reader } from './components/Reader';
@@ -13,16 +21,21 @@ import { NotesDrawer } from './components/NotesDrawer';
 import { SearchModal } from './components/SearchModal';
 import { AIMentorModal } from './components/AIMentorModal';
 import { AudioPlayer } from './components/AudioPlayer';
+import { GoogleDriveHubModal } from './components/GoogleDriveHubModal';
+import { ValidationChecklistModal } from './components/ValidationChecklistModal';
+import { CaseStudiesModal } from './components/CaseStudiesModal';
+import { UserStatsModal } from './components/UserStatsModal';
 
 const STORAGE_KEYS = {
   PREFS: 'startup_ebook_preferences_v1',
   HIGHLIGHTS: 'startup_ebook_highlights_v1',
   STATS: 'startup_ebook_stats_v1',
-  CURRENT_CHAPTER: 'startup_ebook_current_chapter_v1'
+  CURRENT_CHAPTER: 'startup_ebook_current_chapter_v1',
+  CHECKLIST: 'startup_ebook_checklist_v1'
 };
 
 const DEFAULT_PREFERENCES: ReadingPreferences = {
-  theme: 'light',
+  theme: 'deepblue',
   fontFamily: 'serif',
   fontSize: 'base',
   lineHeight: 'relaxed',
@@ -35,7 +48,11 @@ const DEFAULT_STATS: UserStats = {
   totalReadingSeconds: 0,
   quizScores: {},
   streakDays: 1,
-  lastReadDate: new Date().toISOString()
+  lastReadDate: new Date().toISOString(),
+  dailyReadingGoalMinutes: 15,
+  todayReadingSeconds: 0,
+  todayDate: new Date().toISOString().split('T')[0],
+  historyDates: {}
 };
 
 export default function App() {
@@ -66,6 +83,17 @@ export default function App() {
     }
   });
 
+  const [checklist, setChecklist] = useState<ChecklistItem[]>(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEYS.CHECKLIST);
+      return saved ? JSON.parse(saved) : INITIAL_VALIDATION_CHECKLIST;
+    } catch {
+      return INITIAL_VALIDATION_CHECKLIST;
+    }
+  });
+
+  const [caseStudies] = useState<DetailedCaseStudy[]>(DETAILED_CASE_STUDIES);
+
   const [userStats, setUserStats] = useState<UserStats>(() => {
     try {
       const saved = localStorage.getItem(STORAGE_KEYS.STATS);
@@ -81,6 +109,10 @@ export default function App() {
   const [isSearchOpen, setIsSearchOpen] = useState<boolean>(false);
   const [isAIMentorOpen, setIsAIMentorOpen] = useState<boolean>(false);
   const [isAudioOpen, setIsAudioOpen] = useState<boolean>(false);
+  const [isDriveOpen, setIsDriveOpen] = useState<boolean>(false);
+  const [isChecklistOpen, setIsChecklistOpen] = useState<boolean>(false);
+  const [isCaseStudiesOpen, setIsCaseStudiesOpen] = useState<boolean>(false);
+  const [isStatsOpen, setIsStatsOpen] = useState<boolean>(false);
   const [currentAudioParagraphIndex, setCurrentAudioParagraphIndex] = useState<number>(0);
 
   // Sync current chapter to storage
@@ -90,7 +122,6 @@ export default function App() {
     } catch (e) {
       console.warn('LocalStorage error', e);
     }
-    // Scroll to top when changing chapter
     window.scrollTo({ top: 0, behavior: 'smooth' });
     setCurrentAudioParagraphIndex(0);
   }, [currentChapterId]);
@@ -113,6 +144,15 @@ export default function App() {
     }
   }, [highlights]);
 
+  // Sync validation checklist
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEYS.CHECKLIST, JSON.stringify(checklist));
+    } catch (e) {
+      console.warn('LocalStorage error', e);
+    }
+  }, [checklist]);
+
   // Sync user stats
   useEffect(() => {
     try {
@@ -122,13 +162,42 @@ export default function App() {
     }
   }, [userStats]);
 
-  // Reading time counter
+  // Reading time counter & Day rollover tracker
   useEffect(() => {
     const timer = setInterval(() => {
-      setUserStats(prev => ({
-        ...prev,
-        totalReadingSeconds: prev.totalReadingSeconds + 1
-      }));
+      setUserStats(prev => {
+        const currentDateStr = new Date().toISOString().split('T')[0];
+        const prevDateStr = prev.todayDate || currentDateStr;
+
+        let newTodaySeconds = (prev.todayReadingSeconds || 0) + 1;
+        let newHistory = { ...(prev.historyDates || {}) };
+        let newStreak = prev.streakDays || 1;
+
+        if (prevDateStr !== currentDateStr) {
+          newHistory[prevDateStr] = prev.todayReadingSeconds || 0;
+          newTodaySeconds = 1;
+
+          const yesterday = new Date();
+          yesterday.setDate(yesterday.getDate() - 1);
+          const yesterdayStr = yesterday.toISOString().split('T')[0];
+
+          if (prevDateStr === yesterdayStr) {
+            newStreak = (prev.streakDays || 1) + 1;
+          } else {
+            newStreak = 1;
+          }
+        }
+
+        return {
+          ...prev,
+          totalReadingSeconds: (prev.totalReadingSeconds || 0) + 1,
+          todayReadingSeconds: newTodaySeconds,
+          todayDate: currentDateStr,
+          streakDays: newStreak,
+          lastReadDate: new Date().toISOString(),
+          historyDates: newHistory
+        };
+      });
     }, 1000);
     return () => clearInterval(timer);
   }, []);
@@ -144,11 +213,26 @@ export default function App() {
         setIsSearchOpen(false);
         setIsAIMentorOpen(false);
         setIsNotesOpen(false);
+        setIsDriveOpen(false);
+        setIsChecklistOpen(false);
+        setIsCaseStudiesOpen(false);
+        setIsStatsOpen(false);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, []);
+
+  // Sync document root classes & data-theme for Tailwind dark mode and global contrast
+  useEffect(() => {
+    const isDark = preferences.theme === 'deepblue' || preferences.theme === 'dark' || preferences.theme === 'midnight';
+    if (isDark) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+    document.documentElement.setAttribute('data-theme', preferences.theme);
+  }, [preferences.theme]);
 
   // Current Chapter calculations
   const currentChapterIndex = useMemo(() => {
@@ -187,6 +271,24 @@ export default function App() {
     setHighlights(prev => prev.filter(h => h.id !== id));
   };
 
+  const handleToggleChecklistItem = (id: string) => {
+    setChecklist(prev =>
+      prev.map(item => (item.id === id ? { ...item, completed: !item.completed } : item))
+    );
+  };
+
+  const handleUpdateChecklistNotes = (id: string, notes: string) => {
+    setChecklist(prev =>
+      prev.map(item => (item.id === id ? { ...item, notes } : item))
+    );
+  };
+
+  const handleResetChecklist = () => {
+    if (window.confirm('Are you sure you want to reset all checklist progress?')) {
+      setChecklist(INITIAL_VALIDATION_CHECKLIST);
+    }
+  };
+
   const handleToggleComplete = (chapterId: string) => {
     setUserStats(prev => {
       const isAlready = prev.completedChapters.includes(chapterId);
@@ -204,14 +306,23 @@ export default function App() {
     setCurrentChapterId(chapterId);
   };
 
+  const handleUpdateDailyGoal = (minutes: number) => {
+    setUserStats(prev => ({
+      ...prev,
+      dailyReadingGoalMinutes: Math.max(1, minutes)
+    }));
+  };
+
   // Determine theme class
-  const themeClass = preferences.theme === 'sepia'
-    ? 'theme-sepia bg-[#f4ecd8] text-[#433422]'
+  const themeClass = preferences.theme === 'deepblue'
+    ? 'theme-deepblue dark bg-[#070d1e] text-white'
+    : preferences.theme === 'sepia'
+    ? 'theme-sepia bg-[#f5efe6] text-[#33271d]'
     : preferences.theme === 'dark'
-    ? 'theme-dark dark bg-[#1c1917] text-stone-100'
+    ? 'theme-dark dark bg-[#090d16] text-white'
     : preferences.theme === 'midnight'
-    ? 'theme-midnight dark bg-[#000000] text-stone-100'
-    : 'theme-light bg-[#faf9f6] text-stone-900';
+    ? 'theme-midnight dark bg-[#000000] text-white'
+    : 'theme-light bg-[#ffffff] text-slate-900';
 
   return (
     <div id="startup-ebook-app-root" className={`min-h-screen flex flex-col transition-colors duration-200 ${themeClass}`}>
@@ -221,6 +332,7 @@ export default function App() {
         chapterNumber={currentChapter.number}
         totalChapters={CHAPTERS.length}
         completedChaptersCount={userStats.completedChapters.length}
+        userStats={userStats}
         preferences={preferences}
         onUpdatePreferences={handleUpdatePreferences}
         onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
@@ -228,6 +340,10 @@ export default function App() {
         onOpenNotes={() => setIsNotesOpen(true)}
         onOpenAIMentor={() => setIsAIMentorOpen(true)}
         onOpenAudio={() => setIsAudioOpen(true)}
+        onOpenDrive={() => setIsDriveOpen(true)}
+        onOpenChecklist={() => setIsChecklistOpen(true)}
+        onOpenCaseStudies={() => setIsCaseStudiesOpen(true)}
+        onOpenStats={() => setIsStatsOpen(true)}
         notesCount={highlights.length}
       />
 
@@ -245,6 +361,11 @@ export default function App() {
           onOpenSearch={() => setIsSearchOpen(true)}
           onOpenAIMentor={() => setIsAIMentorOpen(true)}
           onOpenAudio={() => setIsAudioOpen(true)}
+          onOpenDrive={() => setIsDriveOpen(true)}
+          onOpenChecklist={() => setIsChecklistOpen(true)}
+          onOpenCaseStudies={() => setIsCaseStudiesOpen(true)}
+          onOpenStats={() => setIsStatsOpen(true)}
+          onUpdateGoal={handleUpdateDailyGoal}
         />
 
         {/* Reading Main Content Area */}
@@ -260,10 +381,62 @@ export default function App() {
             isCompleted={userStats.completedChapters.includes(currentChapter.id)}
             onToggleComplete={handleToggleComplete}
             onOpenAIMentor={() => setIsAIMentorOpen(true)}
+            onOpenStats={() => setIsStatsOpen(true)}
+            userStats={userStats}
             currentAudioParagraphIndex={isAudioOpen ? currentAudioParagraphIndex : -1}
           />
         </main>
       </div>
+
+      {/* User Stats & Daily Reading Goal Tracker Modal */}
+      <UserStatsModal
+        isOpen={isStatsOpen}
+        onClose={() => setIsStatsOpen(false)}
+        userStats={userStats}
+        chapters={CHAPTERS}
+        notesCount={highlights.length}
+        onUpdateGoal={handleUpdateDailyGoal}
+        onSelectChapter={(chapterId) => {
+          setCurrentChapterId(chapterId);
+          setIsStatsOpen(false);
+        }}
+      />
+
+      {/* Google Drive Cloud Hub Modal */}
+      <GoogleDriveHubModal
+        isOpen={isDriveOpen}
+        onClose={() => setIsDriveOpen(false)}
+        chapters={CHAPTERS}
+        currentChapter={currentChapter}
+        highlights={highlights}
+        checklist={checklist}
+        caseStudies={caseStudies}
+      />
+
+      {/* Validating a Business Idea: Actionable Checklist Modal */}
+      <ValidationChecklistModal
+        isOpen={isChecklistOpen}
+        onClose={() => setIsChecklistOpen(false)}
+        checklist={checklist}
+        onToggleItem={handleToggleChecklistItem}
+        onUpdateNotes={handleUpdateChecklistNotes}
+        onResetChecklist={handleResetChecklist}
+        onExportToDrive={() => {
+          setIsChecklistOpen(false);
+          setIsDriveOpen(true);
+        }}
+      />
+
+      {/* Startup Case Studies Dossier Modal */}
+      <CaseStudiesModal
+        isOpen={isCaseStudiesOpen}
+        onClose={() => setIsCaseStudiesOpen(false)}
+        caseStudies={caseStudies}
+        onExportToDrive={() => {
+          setIsCaseStudiesOpen(false);
+          setIsDriveOpen(true);
+        }}
+      />
 
       {/* Floating Audio Narrator Player */}
       <AudioPlayer
@@ -291,6 +464,8 @@ export default function App() {
         onClose={() => setIsNotesOpen(false)}
         onDeleteHighlight={handleDeleteHighlight}
         onJumpToHighlight={handleJumpToHighlight}
+        onAddNote={handleAddHighlight}
+        currentChapterId={currentChapterId}
       />
 
       {/* AI Founder Mentor Modal */}
@@ -311,3 +486,4 @@ export default function App() {
     </div>
   );
 }
+

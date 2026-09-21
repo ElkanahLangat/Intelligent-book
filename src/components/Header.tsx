@@ -1,12 +1,29 @@
 import React, { useState } from 'react';
-import { ReadingPreferences, ReadingTheme, FontFamily, FontSize } from '../types';
-import { Menu, Search, Bot, Bookmark, Volume2, Type, Check, BookOpen } from 'lucide-react';
+import { ReadingPreferences, ReadingTheme, FontFamily, FontSize, UserStats } from '../types';
+import {
+  Menu,
+  Search,
+  Bot,
+  Bookmark,
+  Volume2,
+  Type,
+  Check,
+  BookOpen,
+  HardDrive,
+  ListChecks,
+  Briefcase,
+  Flame,
+  Target,
+  TrendingUp,
+  Sparkles
+} from 'lucide-react';
 
 interface Props {
   chapterTitle: string;
   chapterNumber: number;
   totalChapters: number;
   completedChaptersCount: number;
+  userStats: UserStats;
   preferences: ReadingPreferences;
   onUpdatePreferences: (prefs: Partial<ReadingPreferences>) => void;
   onToggleSidebar: () => void;
@@ -14,6 +31,10 @@ interface Props {
   onOpenNotes: () => void;
   onOpenAIMentor: () => void;
   onOpenAudio: () => void;
+  onOpenDrive: () => void;
+  onOpenChecklist: () => void;
+  onOpenCaseStudies: () => void;
+  onOpenStats: () => void;
   notesCount: number;
 }
 
@@ -22,6 +43,7 @@ export const Header: React.FC<Props> = ({
   chapterNumber,
   totalChapters,
   completedChaptersCount,
+  userStats,
   preferences,
   onUpdatePreferences,
   onToggleSidebar,
@@ -29,17 +51,27 @@ export const Header: React.FC<Props> = ({
   onOpenNotes,
   onOpenAIMentor,
   onOpenAudio,
+  onOpenDrive,
+  onOpenChecklist,
+  onOpenCaseStudies,
+  onOpenStats,
   notesCount
 }) => {
   const [showTypographyMenu, setShowTypographyMenu] = useState<boolean>(false);
 
   const progressPercent = Math.round((completedChaptersCount / Math.max(1, totalChapters)) * 100);
 
+  const dailyGoalMinutes = userStats.dailyReadingGoalMinutes || 15;
+  const todayMinutes = (userStats.todayReadingSeconds || 0) / 60;
+  const goalPercent = Math.min(100, Math.round((todayMinutes / dailyGoalMinutes) * 100));
+  const isGoalMet = todayMinutes >= dailyGoalMinutes;
+
   const themes: { id: ReadingTheme; label: string; icon: string; bg: string; text: string }[] = [
-    { id: 'light', label: 'Paper', icon: '☀️', bg: 'bg-[#FDFDFD]', text: 'text-slate-900' },
-    { id: 'sepia', label: 'Sepia', icon: '📜', bg: 'bg-[#f5efe6]', text: 'text-[#33271d]' },
-    { id: 'dark', label: 'Slate', icon: '🌑', bg: 'bg-[#0b1120]', text: 'text-slate-100' },
+    { id: 'deepblue', label: 'Deep Blue', icon: '🌊', bg: 'bg-[#0b132b]', text: 'text-blue-100' },
+    { id: 'light', label: 'Paper', icon: '☀️', bg: 'bg-[#ffffff]', text: 'text-slate-900' },
+    { id: 'dark', label: 'Black Slate', icon: '🌑', bg: 'bg-[#090d16]', text: 'text-slate-100' },
     { id: 'midnight', label: 'OLED', icon: '🌌', bg: 'bg-[#000000]', text: 'text-slate-100' },
+    { id: 'sepia', label: 'Sepia', icon: '📜', bg: 'bg-[#f5efe6]', text: 'text-[#33271d]' },
   ];
 
   const fonts: { id: FontFamily; label: string; sample: string }[] = [
@@ -56,7 +88,7 @@ export const Header: React.FC<Props> = ({
   ];
 
   return (
-    <header id="ebook-global-header" className="sticky top-0 z-30 w-full backdrop-blur-md border-b border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 transition-colors">
+    <header id="ebook-global-header" className="sticky top-0 z-30 w-full backdrop-blur-md border-b border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 transition-colors font-sans">
       <div className="max-w-7xl mx-auto px-4 sm:px-8 h-16 flex items-center justify-between gap-4">
         {/* Left: Sidebar toggle + Book/Chapter Info */}
         <div className="flex items-center gap-3.5 overflow-hidden">
@@ -77,29 +109,109 @@ export const Header: React.FC<Props> = ({
               <div className="flex items-center gap-2 text-[10px] font-bold uppercase tracking-widest text-blue-600 dark:text-blue-400">
                 <span>Chapter {chapterNumber} of {totalChapters}</span>
               </div>
-              <h1 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight truncate max-w-[180px] sm:max-w-xs md:max-w-md">
+              <h1 className="text-xs sm:text-sm font-bold text-slate-900 dark:text-slate-100 tracking-tight truncate max-w-[150px] sm:max-w-xs md:max-w-md">
                 {chapterTitle}
               </h1>
             </div>
           </div>
         </div>
 
-        {/* Center/Right: Reading Progress Bar */}
-        <div className="hidden lg:flex flex-col items-end">
-          <div className="flex items-center gap-2">
-            <span className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold">Reading Progress</span>
-            <span className="text-[10px] font-mono font-bold text-blue-600 dark:text-blue-400">{progressPercent}%</span>
+        {/* Center/Right: Daily Reading Goal Tracker Pill (Clickable) */}
+        <button
+          type="button"
+          onClick={onOpenStats}
+          className="hidden md:flex items-center gap-3 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60 hover:border-blue-300 dark:hover:border-blue-700 transition-all cursor-pointer group shadow-2xs"
+          title="Open Daily Reading Goal & Stats Dashboard"
+        >
+          <div className="flex items-center gap-1.5">
+            <div className="p-1 rounded-md bg-blue-600/10 dark:bg-blue-400/20 text-blue-600 dark:text-blue-400 group-hover:scale-110 transition-transform">
+              <Target className="w-3.5 h-3.5" />
+            </div>
+            <div className="text-left">
+              <div className="flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                <span>Daily Goal</span>
+                <span className="flex items-center text-amber-600 dark:text-amber-400 font-bold">
+                  <Flame className="w-3 h-3 fill-amber-500 text-amber-500" />
+                  {userStats.streakDays}d
+                </span>
+              </div>
+              <div className="text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-1.5">
+                <span>{todayMinutes.toFixed(1)} / {dailyGoalMinutes}m</span>
+                <span className={`text-[10px] font-mono ${isGoalMet ? 'text-emerald-600 dark:text-emerald-400 font-bold' : 'text-blue-600 dark:text-blue-400'}`}>
+                  {isGoalMet ? '100% ✓' : `${goalPercent}%`}
+                </span>
+              </div>
+            </div>
           </div>
-          <div className="w-40 xl:w-48 h-1.5 bg-slate-100 dark:bg-slate-800 rounded-full mt-1 overflow-hidden">
+
+          <div className="w-20 lg:w-28 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
             <div
-              className="h-full bg-blue-500 transition-all duration-500"
-              style={{ width: `${progressPercent}%` }}
+              className={`h-full transition-all duration-500 ${
+                isGoalMet
+                  ? 'bg-gradient-to-r from-emerald-500 to-teal-400'
+                  : 'bg-gradient-to-r from-blue-600 to-indigo-500'
+              }`}
+              style={{ width: `${goalPercent}%` }}
             />
           </div>
-        </div>
+        </button>
 
-        {/* Right Actions: Search, Audio, AI Mentor, Notes, Typography Settings */}
-        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 border-l border-slate-200 dark:border-slate-800 pl-3 sm:pl-4">
+        {/* Right Actions */}
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0 border-l border-slate-200 dark:border-slate-800 pl-2 sm:pl-3">
+          {/* Mobile Goal & Stats Button */}
+          <button
+            type="button"
+            onClick={onOpenStats}
+            className="md:hidden p-2 rounded-lg border border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-800 text-blue-600 dark:text-blue-400 flex items-center gap-1 cursor-pointer"
+            title="Daily Goal & Stats"
+          >
+            <Target className="w-4 h-4" />
+            <span className="text-[10px] font-bold font-mono">{goalPercent}%</span>
+          </button>
+
+          {/* Google Drive Cloud Button */}
+          <button
+            type="button"
+            onClick={onOpenDrive}
+            className="px-2.5 py-1.5 rounded-lg border border-blue-200 dark:border-blue-900/60 bg-blue-50/70 dark:bg-blue-950/40 hover:bg-blue-100 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 font-semibold text-xs transition-colors cursor-pointer flex items-center gap-1.5 shadow-2xs"
+            title="Google Drive Cloud Hub"
+          >
+            <HardDrive className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+            <span className="hidden md:inline">Google Drive</span>
+          </button>
+
+          {/* Idea Validation Checklist Button */}
+          <button
+            type="button"
+            onClick={onOpenChecklist}
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-500 hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors cursor-pointer hidden sm:flex items-center gap-1"
+            title="Idea Validation Checklist"
+          >
+            <ListChecks className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-emerald-600 dark:text-emerald-400" />
+            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 hidden lg:inline">Validation</span>
+          </button>
+
+          {/* Startup Case Studies Dossier Button */}
+          <button
+            type="button"
+            onClick={onOpenCaseStudies}
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-500 hover:text-purple-600 dark:hover:text-purple-400 transition-colors cursor-pointer hidden sm:flex items-center gap-1"
+            title="Startup Case Studies Dossier"
+          >
+            <Briefcase className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-purple-600 dark:text-purple-400" />
+            <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 hidden lg:inline">Case Studies</span>
+          </button>
+
+          {/* Stats Dashboard Icon Button (Desktop/Laptop) */}
+          <button
+            type="button"
+            onClick={onOpenStats}
+            className="p-2 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors cursor-pointer hidden sm:flex items-center gap-1"
+            title="Reading Stats Dashboard"
+          >
+            <TrendingUp className="w-4 h-4 sm:w-4.5 sm:h-4.5 text-blue-600 dark:text-blue-400" />
+          </button>
+
           <button
             type="button"
             onClick={onOpenSearch}
@@ -122,10 +234,10 @@ export const Header: React.FC<Props> = ({
           <button
             type="button"
             onClick={onOpenAIMentor}
-            className="px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-all shadow-xs shadow-blue-500/20 cursor-pointer flex items-center gap-1.5"
+            className="px-2.5 sm:px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs transition-all shadow-xs shadow-blue-500/20 cursor-pointer flex items-center gap-1.5"
             title="Ask AI Founder Mentor"
           >
-            <Bot className="w-4 h-4" />
+            <Bot className="w-3.5 h-3.5 sm:w-4 sm:h-4" />
             <span className="hidden sm:inline">AI Mentor</span>
           </button>
 
@@ -137,7 +249,7 @@ export const Header: React.FC<Props> = ({
           >
             <Bookmark className="w-4 h-4 sm:w-5 sm:h-5" />
             {notesCount > 0 && (
-              <span className="absolute 0 top-0 right-0 w-4 h-4 rounded-full bg-blue-600 text-white font-bold text-[9px] flex items-center justify-center shadow-xs">
+              <span className="absolute top-0 right-0 w-4 h-4 rounded-full bg-blue-600 text-white font-bold text-[9px] flex items-center justify-center shadow-xs">
                 {notesCount}
               </span>
             )}
@@ -164,20 +276,20 @@ export const Header: React.FC<Props> = ({
                   {/* Theme Picker */}
                   <div>
                     <span className="block text-[11px] font-bold text-slate-400 uppercase tracking-wider mb-2">Reading Palette</span>
-                    <div className="grid grid-cols-4 gap-2">
+                    <div className="grid grid-cols-5 gap-1.5">
                       {themes.map((t) => (
                         <button
                           key={t.id}
                           type="button"
                           onClick={() => onUpdatePreferences({ theme: t.id })}
-                          className={`p-2 rounded-lg border flex flex-col items-center gap-1 transition-all ${
+                          className={`p-1.5 rounded-lg border flex flex-col items-center gap-1 transition-all cursor-pointer ${
                             preferences.theme === t.id
-                              ? 'ring-2 ring-blue-500 border-blue-500 font-bold'
-                              : 'border-slate-200 dark:border-slate-800 hover:border-slate-300'
+                              ? 'ring-2 ring-blue-500 border-blue-500 font-bold scale-105'
+                              : 'border-slate-300 dark:border-slate-700 hover:border-slate-400'
                           } ${t.bg} ${t.text}`}
                         >
-                          <span>{t.icon}</span>
-                          <span className="text-[10px] font-semibold">{t.label}</span>
+                          <span className="text-sm">{t.icon}</span>
+                          <span className="text-[9px] font-semibold truncate max-w-full">{t.label}</span>
                         </button>
                       ))}
                     </div>
@@ -258,4 +370,5 @@ export const Header: React.FC<Props> = ({
     </header>
   );
 };
+
 

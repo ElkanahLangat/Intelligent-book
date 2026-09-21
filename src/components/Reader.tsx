@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Chapter, ReadingPreferences, HighlightItem } from '../types';
+import { Chapter, ReadingPreferences, HighlightItem, UserStats } from '../types';
 import { InteractiveFrameworks } from './InteractiveFrameworks';
 import { ChapterQuiz } from './ChapterQuiz';
 import { 
@@ -15,7 +15,9 @@ import {
   Sparkles, 
   ListChecks, 
   Flame,
-  MessageSquare
+  MessageSquare,
+  Target,
+  TrendingUp
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -30,6 +32,8 @@ interface Props {
   isCompleted: boolean;
   onToggleComplete: (chapterId: string) => void;
   onOpenAIMentor: () => void;
+  onOpenStats?: () => void;
+  userStats?: UserStats;
   currentAudioParagraphIndex: number;
 }
 
@@ -44,12 +48,29 @@ export const Reader: React.FC<Props> = ({
   isCompleted,
   onToggleComplete,
   onOpenAIMentor,
+  onOpenStats,
+  userStats,
   currentAudioParagraphIndex
 }) => {
   const [checkedItems, setCheckedItems] = useState<Record<string, boolean>>({});
   const [highlightingParagraph, setHighlightingParagraph] = useState<number | null>(null);
-  const [highlightColor, setHighlightColor] = useState<'yellow' | 'green' | 'blue' | 'purple' | 'amber'>('blue');
+  const [highlightColor, setHighlightColor] = useState<'yellow' | 'green' | 'blue' | 'purple' | 'amber'>('green');
   const [customNote, setCustomNote] = useState<string>('');
+  const [copiedNoteId, setCopiedNoteId] = useState<string | null>(null);
+
+  const highlightStyleMap: Record<string, string> = {
+    yellow: 'bg-amber-100/80 dark:bg-amber-950/40 border-l-4 border-amber-400 text-slate-900 dark:text-amber-100',
+    amber: 'bg-amber-100/80 dark:bg-amber-950/40 border-l-4 border-amber-400 text-slate-900 dark:text-amber-100',
+    green: 'bg-emerald-100/80 dark:bg-emerald-950/40 border-l-4 border-emerald-500 text-slate-900 dark:text-emerald-100',
+    blue: 'bg-blue-100/80 dark:bg-blue-950/40 border-l-4 border-blue-500 text-slate-900 dark:text-blue-100',
+    purple: 'bg-purple-100/80 dark:bg-purple-950/40 border-l-4 border-purple-500 text-slate-900 dark:text-purple-100',
+  };
+
+  const copyNoteText = (id: string, text: string) => {
+    navigator.clipboard.writeText(text);
+    setCopiedNoteId(id);
+    setTimeout(() => setCopiedNoteId(null), 2000);
+  };
 
   const toggleCheck = (id: string) => {
     setCheckedItems(prev => ({
@@ -168,7 +189,7 @@ export const Reader: React.FC<Props> = ({
                       isCurrentAudio 
                         ? 'bg-blue-100/70 dark:bg-blue-950/60 ring-2 ring-blue-500' 
                         : existingHighlight 
-                        ? 'bg-blue-50/60 dark:bg-blue-950/30 border-l-2 border-blue-500' 
+                        ? (highlightStyleMap[existingHighlight.color] || highlightStyleMap.green)
                         : 'hover:bg-slate-50/80 dark:hover:bg-slate-800/40'
                     }`}
                   >
@@ -176,12 +197,28 @@ export const Reader: React.FC<Props> = ({
                       {para}
                     </p>
 
+                    {/* Inline note & seamless copy if present */}
+                    {existingHighlight && existingHighlight.note && (
+                      <div className="mt-2.5 p-2 rounded-lg bg-black/5 dark:bg-white/5 border border-black/10 dark:border-white/10 text-xs flex items-center justify-between gap-2 font-sans">
+                        <span className="italic font-medium text-slate-700 dark:text-slate-300">
+                          Note: {existingHighlight.note}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => copyNoteText(existingHighlight.id, `"${para}"\nNote: ${existingHighlight.note}`)}
+                          className="text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1 shrink-0 cursor-pointer"
+                        >
+                          {copiedNoteId === existingHighlight.id ? 'Copied!' : 'Copy Note'}
+                        </button>
+                      </div>
+                    )}
+
                     {/* Quick Highlight / Note Trigger on Hover */}
                     <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 bg-white dark:bg-slate-800 shadow-md border border-slate-200 dark:border-slate-700 rounded-lg p-1 text-xs">
                       <button
                         type="button"
                         onClick={() => setHighlightingParagraph(highlightingParagraph === globalIndex ? null : globalIndex)}
-                        className="p-1 rounded text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors"
+                        className="p-1 rounded text-slate-500 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950 transition-colors cursor-pointer"
                         title="Highlight & Add Founder Note"
                       >
                         <Highlighter className="w-3.5 h-3.5" />
@@ -192,15 +229,17 @@ export const Reader: React.FC<Props> = ({
                     {highlightingParagraph === globalIndex && (
                       <div className="mt-3 p-3.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-xl text-xs space-y-2.5 font-sans">
                         <div className="flex items-center justify-between">
-                          <span className="font-semibold text-slate-700 dark:text-slate-300">Save Insight to Field Notes</span>
+                          <span className="font-semibold text-slate-700 dark:text-slate-300">Save Insight (Green & Yellow Notes)</span>
                           <div className="flex items-center gap-1.5">
-                            {(['blue', 'green', 'amber', 'purple'] as const).map((c) => (
+                            {(['green', 'yellow', 'blue', 'purple'] as const).map((c) => (
                               <button
                                 key={c}
                                 type="button"
                                 onClick={() => setHighlightColor(c)}
-                                className={`w-4 h-4 rounded-full border ${
-                                  c === 'blue' ? 'bg-blue-500' : c === 'green' ? 'bg-emerald-500' : c === 'amber' ? 'bg-amber-400' : 'bg-purple-500'
+                                className={`w-4 h-4 rounded-full border cursor-pointer ${
+                                  c === 'green' ? 'bg-emerald-500 border-emerald-400' :
+                                  c === 'yellow' ? 'bg-amber-400 border-amber-300' :
+                                  c === 'blue' ? 'bg-blue-500 border-blue-400' : 'bg-purple-500 border-purple-400'
                                 } ${highlightColor === c ? 'ring-2 ring-slate-900 dark:ring-white scale-110' : 'opacity-70'}`}
                               />
                             ))}
@@ -401,18 +440,34 @@ export const Reader: React.FC<Props> = ({
         <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
           Finished reading {chapter.title}? Mark it complete to update your field progress.
         </p>
-        <button
-          type="button"
-          onClick={handleMarkCompleted}
-          className={`px-6 py-2.5 rounded-lg font-bold text-xs sm:text-sm inline-flex items-center gap-2 transition-all cursor-pointer ${
-            isCompleted
-              ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
-              : 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs shadow-blue-500/20'
-          }`}
-        >
-          <Award className="w-4 h-4" />
-          <span>{isCompleted ? '✓ Chapter Completed' : 'Mark Chapter as Finished'}</span>
-        </button>
+
+        <div className="flex flex-wrap items-center justify-center gap-3">
+          <button
+            type="button"
+            onClick={handleMarkCompleted}
+            className={`px-6 py-2.5 rounded-lg font-bold text-xs sm:text-sm inline-flex items-center gap-2 transition-all cursor-pointer ${
+              isCompleted
+                ? 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+                : 'bg-blue-600 hover:bg-blue-700 text-white shadow-xs shadow-blue-500/20'
+            }`}
+          >
+            <Award className="w-4 h-4" />
+            <span>{isCompleted ? '✓ Chapter Completed' : 'Mark Chapter as Finished'}</span>
+          </button>
+
+          {userStats && onOpenStats && (
+            <button
+              type="button"
+              onClick={onOpenStats}
+              className="px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:border-blue-400 font-semibold text-xs inline-flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <Target className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+              <span>
+                Today: {((userStats.todayReadingSeconds || 0) / 60).toFixed(1)}m / {userStats.dailyReadingGoalMinutes || 15}m goal
+              </span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Bottom Chapter Navigation Bar from Professional Polish */}

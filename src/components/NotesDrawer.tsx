@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { HighlightItem, Chapter } from '../types';
-import { Bookmark, Highlighter, Trash2, Download, Copy, Check, X, FileText, Sparkles, Filter } from 'lucide-react';
+import { Bookmark, Trash2, Download, Copy, Check, X, FileText, Plus, Tag, Sparkles } from 'lucide-react';
 
 interface Props {
   highlights: HighlightItem[];
@@ -9,6 +9,8 @@ interface Props {
   onClose: () => void;
   onDeleteHighlight: (id: string) => void;
   onJumpToHighlight: (chapterId: string, paragraphIndex: number) => void;
+  onAddNote?: (item: Omit<HighlightItem, 'id' | 'createdAt'>) => void;
+  currentChapterId?: string;
 }
 
 export const NotesDrawer: React.FC<Props> = ({
@@ -17,10 +19,19 @@ export const NotesDrawer: React.FC<Props> = ({
   isOpen,
   onClose,
   onDeleteHighlight,
-  onJumpToHighlight
+  onJumpToHighlight,
+  onAddNote,
+  currentChapterId
 }) => {
   const [selectedColor, setSelectedColor] = useState<string | null>(null);
-  const [copied, setCopied] = useState<boolean>(false);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [copyAllStatus, setCopyAllStatus] = useState<boolean>(false);
+  const [showAddForm, setShowAddForm] = useState<boolean>(false);
+
+  // New Note State
+  const [newNoteText, setNewNoteText] = useState<string>('');
+  const [newNoteCategory, setNewNoteCategory] = useState<string>('Startup');
+  const [newNoteColor, setNewNoteColor] = useState<'yellow' | 'green' | 'blue' | 'purple'>('green');
 
   if (!isOpen) return null;
 
@@ -33,8 +44,45 @@ export const NotesDrawer: React.FC<Props> = ({
     return ch ? ch.title : chapterId;
   };
 
+  const handleSaveCustomNote = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newNoteText.trim() || !onAddNote) return;
+
+    onAddNote({
+      chapterId: currentChapterId || chapters[0].id,
+      paragraphIndex: 0,
+      text: `[${newNoteCategory}] ${newNoteText.trim()}`,
+      color: newNoteColor === 'yellow' ? 'yellow' : newNoteColor === 'green' ? 'green' : newNoteColor === 'blue' ? 'blue' : 'purple',
+      note: undefined
+    });
+
+    setNewNoteText('');
+    setShowAddForm(false);
+  };
+
+  const copySingleNote = (id: string, text: string, note?: string) => {
+    const fullText = note ? `"${text}"\nReflection: ${note}` : text;
+    navigator.clipboard.writeText(fullText);
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  const copyAllToClipboard = () => {
+    if (highlights.length === 0) return;
+    let text = `# Founder Notebook: Field Notes, Habits & Wealth Psychology\n\n`;
+    highlights.forEach(h => {
+      text += `[${getChapterTitle(h.chapterId)}]\n"${h.text}"\n`;
+      if (h.note) text += `Reflection: ${h.note}\n`;
+      text += `\n`;
+    });
+    navigator.clipboard.writeText(text);
+    setCopyAllStatus(true);
+    setTimeout(() => setCopyAllStatus(false), 2000);
+  };
+
   const exportAsMarkdown = () => {
-    let md = `# Startup Lessons: My Founder Field Notes & Highlights\n`;
+    if (highlights.length === 0) return;
+    let md = `# Founder Notebook: Field Notes, Habits & Wealth Psychology\n`;
     md += `Exported on ${new Date().toLocaleDateString()}\n\n`;
 
     const grouped: Record<string, HighlightItem[]> = {};
@@ -48,7 +96,7 @@ export const NotesDrawer: React.FC<Props> = ({
       grouped[chId].forEach(h => {
         md += `> "${h.text}"\n`;
         if (h.note) {
-          md += `\n*Founder Reflection:* ${h.note}\n`;
+          md += `\n*Reflection:* ${h.note}\n`;
         }
         md += `\n`;
       });
@@ -59,94 +107,179 @@ export const NotesDrawer: React.FC<Props> = ({
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `startup-lessons-field-notes-${new Date().toISOString().slice(0, 10)}.md`;
+    a.download = `founder-field-notes-${new Date().toISOString().slice(0, 10)}.md`;
     a.click();
     URL.revokeObjectURL(url);
   };
 
-  const copyAllToClipboard = () => {
-    let text = `Startup Lessons: Founder Field Notes\n\n`;
-    highlights.forEach(h => {
-      text += `[${getChapterTitle(h.chapterId)}]\n"${h.text}"\n`;
-      if (h.note) text += `Note: ${h.note}\n`;
-      text += `\n`;
-    });
-    navigator.clipboard.writeText(text);
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+  // Vivid Green, Yellow, Blue, and Purple card styling with high contrast readability
+  const colorBadgeClass: Record<string, string> = {
+    yellow: 'bg-amber-950/40 text-amber-100 border-l-4 border-amber-400 border-amber-500/30 shadow-md',
+    green: 'bg-emerald-950/40 text-emerald-100 border-l-4 border-emerald-400 border-emerald-500/30 shadow-md',
+    blue: 'bg-blue-950/40 text-blue-100 border-l-4 border-blue-400 border-blue-500/30 shadow-md',
+    purple: 'bg-purple-950/40 text-purple-100 border-l-4 border-purple-400 border-purple-500/30 shadow-md',
+    amber: 'bg-amber-950/40 text-amber-100 border-l-4 border-amber-400 border-amber-500/30 shadow-md'
   };
 
-  const colorBadgeClass: Record<string, string> = {
-    yellow: 'bg-amber-50 dark:bg-amber-950/40 text-slate-800 dark:text-slate-200 border-amber-300 dark:border-amber-700/60',
-    green: 'bg-emerald-50 dark:bg-emerald-950/40 text-slate-800 dark:text-slate-200 border-emerald-300 dark:border-emerald-700/60',
-    blue: 'bg-blue-50 dark:bg-blue-950/40 text-slate-800 dark:text-slate-200 border-blue-300 dark:border-blue-700/60',
-    purple: 'bg-purple-50 dark:bg-purple-950/40 text-slate-800 dark:text-slate-200 border-purple-300 dark:border-purple-700/60',
-    amber: 'bg-orange-50 dark:bg-orange-950/40 text-slate-800 dark:text-slate-200 border-orange-300 dark:border-orange-700/60'
-  };
+  const categories = ['Startup', 'Habit', 'Psychology of Wealth', 'Money', 'Managing Things'];
 
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/50 backdrop-blur-xs font-sans">
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 border-l border-slate-200 dark:border-slate-800 h-full shadow-2xl flex flex-col">
-        {/* Header */}
-        <div className="p-4 sm:p-5 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-900/80">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-blue-500/10 text-blue-600 dark:text-blue-400 flex items-center justify-center font-bold">
-              <Bookmark className="w-4 h-4" />
+    <div className="fixed inset-0 z-50 flex justify-end bg-slate-950/60 backdrop-blur-xs font-sans">
+      <div className="w-full max-w-lg bg-[#090d16] text-slate-100 border-l border-slate-800 h-full shadow-2xl flex flex-col">
+        {/* Header - Deep Blue & Black Aesthetic */}
+        <div className="p-4 sm:p-5 border-b border-slate-800 flex items-center justify-between bg-[#070d1e]">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-blue-600 text-white flex items-center justify-center font-bold shadow-md shadow-blue-900/40">
+              <Bookmark className="w-5 h-5" />
             </div>
             <div>
-              <h3 className="font-bold text-slate-900 dark:text-slate-100 text-sm font-serif">Highlights & Notes</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">{highlights.length} saved insights</p>
+              <h3 className="font-bold text-white text-base">Founder Notebook & Field Notes</h3>
+              <p className="text-xs text-slate-400">
+                {highlights.length} records • Startups, habits, wealth psychology & management
+              </p>
             </div>
           </div>
 
-          <button
-            type="button"
-            onClick={onClose}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 cursor-pointer"
-          >
-            <X className="w-5 h-5" />
-          </button>
+          <div className="flex items-center gap-1.5">
+            {onAddNote && (
+              <button
+                type="button"
+                onClick={() => setShowAddForm(prev => !prev)}
+                className="px-2.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-xs font-semibold flex items-center gap-1 transition-colors cursor-pointer"
+                title="Record new insight or note"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Record</span>
+              </button>
+            )}
+
+            <button
+              type="button"
+              onClick={onClose}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
-        {/* Action toolbar & color filter */}
-        <div className="p-3 border-b border-slate-200 dark:border-slate-800 flex items-center justify-between gap-2 bg-slate-50/50 dark:bg-slate-900/50 text-xs">
+        {/* Quick Add Note Form (Record Data with Green & Yellow colors) */}
+        {showAddForm && onAddNote && (
+          <form onSubmit={handleSaveCustomNote} className="p-4 bg-[#0b132b] border-b border-slate-800 space-y-3">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-bold text-blue-300 uppercase tracking-wider flex items-center gap-1.5">
+                <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                Record Data & Notebook Entry
+              </span>
+              
+              {/* Color Selector: Highlight colorful Green & Yellow */}
+              <div className="flex items-center gap-1.5">
+                <span className="text-[10px] text-slate-400 mr-1">Color:</span>
+                {(['green', 'yellow', 'blue', 'purple'] as const).map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setNewNoteColor(c)}
+                    className={`w-5 h-5 rounded-full border cursor-pointer transition-transform ${
+                      c === 'green' ? 'bg-emerald-500 border-emerald-400' :
+                      c === 'yellow' ? 'bg-amber-400 border-amber-300' :
+                      c === 'blue' ? 'bg-blue-500 border-blue-400' : 'bg-purple-500 border-purple-400'
+                    } ${newNoteColor === c ? 'ring-2 ring-white scale-110' : 'opacity-70'}`}
+                  />
+                ))}
+              </div>
+            </div>
+
+            {/* Category selection */}
+            <div className="flex flex-wrap gap-1.5">
+              {categories.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setNewNoteCategory(cat)}
+                  className={`px-2 py-0.5 rounded-full text-[10px] font-semibold transition-colors cursor-pointer ${
+                    newNoteCategory === cat
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-slate-800 text-slate-300 hover:bg-slate-700'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </div>
+
+            <textarea
+              rows={2}
+              value={newNoteText}
+              onChange={(e) => setNewNoteText(e.target.value)}
+              placeholder="Record your observation, habit commitment, money rule, or startup insight..."
+              className="w-full p-2.5 rounded-lg bg-[#070d1e] text-slate-100 border border-slate-700 text-xs focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+              autoFocus
+            />
+
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowAddForm(false)}
+                className="px-3 py-1 rounded text-xs text-slate-400 hover:text-white cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={!newNoteText.trim()}
+                className="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs transition-colors disabled:opacity-40 cursor-pointer shadow-xs"
+              >
+                Save Record
+              </button>
+            </div>
+          </form>
+        )}
+
+        {/* Action Toolbar & Color Filters */}
+        <div className="p-3 border-b border-slate-800 flex items-center justify-between gap-2 bg-[#070d1e]/80 text-xs">
           <div className="flex items-center gap-1.5">
             <span className="text-slate-400 text-[11px] mr-1">Filter:</span>
-            {['yellow', 'green', 'blue', 'purple'].map((c) => (
+            {['green', 'yellow', 'blue', 'purple'].map((c) => (
               <button
                 key={c}
                 type="button"
                 onClick={() => setSelectedColor(selectedColor === c ? null : c)}
                 className={`w-4 h-4 rounded-full border cursor-pointer ${
-                  c === 'yellow' ? 'bg-amber-400 border-amber-500' : c === 'green' ? 'bg-emerald-500 border-emerald-600' : c === 'blue' ? 'bg-blue-500 border-blue-600' : 'bg-purple-500 border-purple-600'
-                } ${selectedColor === c ? 'ring-2 ring-slate-900 dark:ring-white scale-110' : 'opacity-70 hover:opacity-100'}`}
+                  c === 'green' ? 'bg-emerald-500 border-emerald-400' :
+                  c === 'yellow' ? 'bg-amber-400 border-amber-300' :
+                  c === 'blue' ? 'bg-blue-500 border-blue-400' : 'bg-purple-500 border-purple-400'
+                } ${selectedColor === c ? 'ring-2 ring-white scale-110' : 'opacity-70 hover:opacity-100'}`}
+                title={`Filter by ${c}`}
               />
             ))}
             {selectedColor && (
               <button
                 type="button"
                 onClick={() => setSelectedColor(null)}
-                className="text-[11px] text-slate-500 hover:underline ml-1 cursor-pointer"
+                className="text-[11px] text-blue-400 hover:underline ml-1 cursor-pointer"
               >
-                Clear
+                All
               </button>
             )}
           </div>
 
           {highlights.length > 0 && (
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1.5">
               <button
                 type="button"
                 onClick={copyAllToClipboard}
-                className="px-2.5 py-1 rounded-md border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 text-[11px] flex items-center gap-1 cursor-pointer transition-colors"
+                className="px-2.5 py-1 rounded-md border border-slate-700 hover:bg-slate-800 text-slate-300 text-[11px] flex items-center gap-1 cursor-pointer transition-colors"
+                title="Copy all notes to clipboard seamlessly"
               >
-                {copied ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
-                <span>{copied ? 'Copied' : 'Copy'}</span>
+                {copyAllStatus ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                <span>{copyAllStatus ? 'Copied All!' : 'Copy All'}</span>
               </button>
               <button
                 type="button"
                 onClick={exportAsMarkdown}
-                className="px-2.5 py-1 rounded-md bg-blue-600 text-white font-semibold text-[11px] flex items-center gap-1 shadow-xs hover:bg-blue-700 cursor-pointer transition-colors"
+                className="px-2.5 py-1 rounded-md bg-blue-600 hover:bg-blue-700 text-white font-semibold text-[11px] flex items-center gap-1 shadow-xs cursor-pointer transition-colors"
+                title="Export as Markdown File"
               >
                 <Download className="w-3 h-3" />
                 <span>Export .md</span>
@@ -155,24 +288,31 @@ export const NotesDrawer: React.FC<Props> = ({
           )}
         </div>
 
-        {/* Highlights List */}
-        <div className="p-4 overflow-y-auto flex-1 space-y-3 divide-y divide-slate-100 dark:divide-slate-800/40">
+        {/* Highlights & Records List */}
+        <div className="p-4 overflow-y-auto flex-1 space-y-3">
           {filteredHighlights.length === 0 ? (
             <div className="py-16 text-center text-slate-400 text-xs">
-              <FileText className="w-8 h-8 mx-auto mb-2 opacity-40 text-slate-500" />
-              <p className="font-medium text-slate-600 dark:text-slate-300">No highlights saved yet</p>
-              <p className="mt-1 text-[11px] max-w-xs mx-auto text-slate-500">
-                Select any text or click the highlight icon on any paragraph while reading to save quotes and add founder reflections.
+              <FileText className="w-8 h-8 mx-auto mb-2 opacity-40 text-blue-400" />
+              <p className="font-semibold text-slate-200">No notes recorded yet</p>
+              <p className="mt-1.5 text-[11px] max-w-xs mx-auto text-slate-400 leading-relaxed">
+                Click <span className="text-blue-400 font-semibold">"Record"</span> above to jot down habits, money rules, or startup insights, or highlight any text in the chapters.
               </p>
             </div>
           ) : (
             filteredHighlights.map((item) => (
-              <div key={item.id} className="pt-3 first:pt-0 group">
+              <div
+                key={item.id}
+                className={`p-3.5 rounded-xl border transition-all ${
+                  colorBadgeClass[item.color] || colorBadgeClass.green
+                }`}
+              >
                 <div className="flex items-center justify-between text-[10px] text-slate-400 mb-1.5">
-                  <span className="font-semibold text-blue-600 dark:text-blue-400 truncate max-w-[220px]">
+                  <span className="font-bold text-blue-600 dark:text-blue-300 truncate max-w-[240px]">
                     {getChapterTitle(item.chapterId)}
                   </span>
-                  <span>{new Date(item.createdAt).toLocaleDateString()}</span>
+                  <span className="text-slate-400">
+                    {new Date(item.createdAt).toLocaleDateString()}
+                  </span>
                 </div>
 
                 <div
@@ -180,25 +320,46 @@ export const NotesDrawer: React.FC<Props> = ({
                     onJumpToHighlight(item.chapterId, item.paragraphIndex);
                     onClose();
                   }}
-                  className={`p-3 rounded-lg border text-xs leading-relaxed cursor-pointer transition-all hover:shadow-xs ${
-                    colorBadgeClass[item.color] || colorBadgeClass.yellow
-                  }`}
+                  className="cursor-pointer"
                 >
-                  <p className="italic font-serif">"{item.text}"</p>
+                  <p className="text-xs sm:text-sm font-serif leading-relaxed whitespace-pre-wrap">
+                    {item.text}
+                  </p>
 
                   {item.note && (
-                    <div className="mt-2 pt-2 border-t border-slate-300/40 dark:border-slate-700/40 text-[11px] font-sans not-italic font-medium text-slate-700 dark:text-slate-300">
-                      <span className="opacity-75">Note: </span>
+                    <div className="mt-2.5 pt-2 border-t border-slate-300/60 dark:border-slate-700/60 text-[11px] font-sans font-medium text-slate-700 dark:text-slate-200">
+                      <span className="opacity-75 font-bold">Reflection: </span>
                       {item.note}
                     </div>
                   )}
                 </div>
 
-                <div className="flex items-center justify-end gap-2 mt-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                {/* Seamless Actions on each note */}
+                <div className="flex items-center justify-between mt-2.5 pt-2 border-t border-slate-200/60 dark:border-slate-800/60 text-[11px]">
+                  <button
+                    type="button"
+                    onClick={() => copySingleNote(item.id, item.text, item.note)}
+                    className="text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-white flex items-center gap-1 cursor-pointer transition-colors"
+                    title="Copy this note"
+                  >
+                    {copiedId === item.id ? (
+                      <>
+                        <Check className="w-3 h-3 text-emerald-500" />
+                        <span className="text-emerald-500 font-semibold">Copied!</span>
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-3 h-3" />
+                        <span>Copy Note</span>
+                      </>
+                    )}
+                  </button>
+
                   <button
                     type="button"
                     onClick={() => onDeleteHighlight(item.id)}
-                    className="text-[11px] text-rose-500 hover:text-rose-700 p-1 flex items-center gap-1 cursor-pointer"
+                    className="text-slate-400 hover:text-rose-500 p-1 flex items-center gap-1 cursor-pointer transition-colors"
+                    title="Delete record"
                   >
                     <Trash2 className="w-3 h-3" />
                     <span>Delete</span>
@@ -212,4 +373,3 @@ export const NotesDrawer: React.FC<Props> = ({
     </div>
   );
 };
-

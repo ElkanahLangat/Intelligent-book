@@ -518,8 +518,144 @@ export const CHAPTERS: Chapter[] = [
     ]
   },
   {
-    id: "epilogue",
+    id: "ch-8-psychology-of-wealth",
     number: 8,
+    title: "Chapter 8: The Psychology of Wealth, Money & Runway",
+    subtitle: "Compounding Asymmetry, Wealth vs Status & Managing Startup Capital",
+    readTimeMinutes: 5,
+    category: "Wealth & Money",
+    summary: "True wealth is not flashy burn or inflated cap tables; it is options, autonomy, and the ability to control your calendar. Learn the psychological laws of lasting wealth.",
+    introQuote: {
+      quote: "Spending money to show people how much money you have is the fastest way to have less money.",
+      author: "Morgan Housel, The Psychology of Money"
+    },
+    sections: [
+      {
+        id: "ch8-1",
+        title: "Wealth is What You Don't See",
+        paragraphs: [
+          "Most people confuse being rich with being wealthy. Rich is current income or a splashy funding round spent on fancy offices, branded merchandise, and high lifestyle overhead. Wealth, by contrast, is the income not spent, the capital compounded, and the unexercised options in reserve.",
+          "In the startup ecosystem, founders frequently fall victim to status games. A $10M valuation on paper can vanish overnight in a down round. The founders who achieve permanent financial freedom are those who keep their personal burn low, protect their equity, and treat cash as oxygen.",
+          "The ultimate dividend of wealth is not luxury possessions; it is autonomy. Having 24 months of personal and company runway means you never have to accept predatory term sheets, bend your product vision to demanding bad-fit clients, or panic during market corrections."
+        ],
+        pullQuote: {
+          text: "The greatest value of money is its ability to buy you time and control over what you wake up to do every single morning.",
+          author: "Naval Ravikant",
+          role: "Co-Founder, AngelList"
+        },
+        keyTakeaways: [
+          "Wealth is the hidden cash and assets you do not display; status is the expense you show off.",
+          "High savings rate and controlled burn beats chasing speculative high-risk spikes every time.",
+          "Freedom and autonomy are the only rational financial end-games for founders."
+        ]
+      },
+      {
+        id: "ch8-2",
+        title: "The Compounding Engine & Startup Runway",
+        paragraphs: [
+          "Compounding works miracles, but it has one merciless prerequisite: you must survive long enough for the exponential curve to kick in. The single biggest reason founders fail is not lack of vision; it is running out of money before product-market fit arrives.",
+          "Every dollar in your bank account is a unit of time. When you decrease your burn rate from $40k/month to $20k/month, you do not just save money—you double the lifespan of your startup and double the number of experiments you can execute.",
+          "Maintain strict financial hygiene. Audit your SaaS subscriptions quarterly, negotiate upfront annual payments with enterprise customers, and remember that cash in the bank equals strategic sovereignty."
+        ],
+        checklist: [
+          "Calculate your personal and company 'Zero Cash Date' every Monday morning.",
+          "Incentivize annual upfront contracts by offering a 15-20% discount to extend cash runway.",
+          "Separate your self-worth from paper valuations; focus on net cash flow and true customer utility."
+        ]
+      }
+    ],
+    quiz: [
+      {
+        id: "q8",
+        question: "What is the primary psychological distinction between being rich and being wealthy?",
+        options: [
+          "Rich is having lots of employees; wealthy is being a solo founder",
+          "Rich is current visible consumption; wealth is unspent capital, resilience, and time autonomy",
+          "Rich is owning crypto; wealthy is owning real estate",
+          "There is no difference between the two terms"
+        ],
+        correctIndex: 1,
+        explanation: "Rich is what people show off through current expenditures; wealth is the quiet financial buffer that gives you control over your time.",
+        founderTakeaway: "Prioritize endurance and financial freedom over social prestige."
+      }
+    ],
+    actionPlan: [
+      "Audit every single company subscription and eliminate at least 3 unused software tools this week.",
+      "Calculate exactly how many months of runway remain at current net burn rate.",
+      "Set up a personal rule: automate saving a fixed percentage of income before any discretionary lifestyle spending."
+    ]
+  },
+  {
+    id: "ch-9-founder-habits",
+    number: 9,
+    title: "Chapter 9: Founder Habits, Atomic Systems & Managing Your Things",
+    subtitle: "The 3-Win Daily Architecture, Asynchronous Operations & Executive Stamina",
+    readTimeMinutes: 5,
+    category: "Habits",
+    summary: "You do not rise to the level of your startup goals; you fall to the level of your systems. Master the daily habits that prevent burnout and keep operations pristine.",
+    introQuote: {
+      quote: "You do not rise to the level of your goals. You fall to the level of your systems.",
+      author: "James Clear, Atomic Habits"
+    },
+    sections: [
+      {
+        id: "ch9-1",
+        title: "The 3-Win Protocol: Protecting High-Cognitive Peak",
+        paragraphs: [
+          "The moment you open your email or Slack inbox in the morning, you surrender control of your day to other people's priorities. The highest-leverage founders practice strict cognitive boundary management.",
+          "Adopt the '3-Win Protocol': Before connecting to the internet, write down the single highest-impact task (Win #1) that will move your primary metric forward. Pair it with one operational hygiene task (Win #2) and one personal renewal habit (Win #3, such as exercise or reading).",
+          "Protect the first 90 to 120 minutes of your workday for deep, uninterrupted creative synthesis—writing core architecture, speaking to a strategic customer, or clarifying your product roadmap."
+        ],
+        pullQuote: {
+          text: "Decide what the most important thing is, and do that first. Everything else is a distraction disguised as productivity.",
+          author: "Andy Grove",
+          role: "Former CEO, Intel & Author of High Output Management"
+        },
+        keyTakeaways: [
+          "Deep work must precede reactive work: never open communication feeds before completing Win #1.",
+          "Batch all 1:1 meetings and external calls into dedicated two-day afternoon blocks.",
+          "Executive stamina is built on daily micro-habits, not hero sprints that lead to collapse."
+        ]
+      },
+      {
+        id: "ch9-2",
+        title: "Managing Your Things: Radical Operational Systems",
+        paragraphs: [
+          "As your company scales from 2 to 10 people, cognitive overload can paralyze you. 'Managing your things' means building reliable external brains and checklists rather than holding 50 open mental loops in your head.",
+          "Utilize the 4-Quadrant Founder Matrix: 1) Urgent & High Leverage (Do today), 2) Non-Urgent & High Leverage (Schedule deep blocks), 3) Urgent & Low Leverage (Automate or delegate), 4) Non-Urgent & Low Leverage (Ruthlessly delete).",
+          "Institute the 'Sunday 30-Minute Reset'. Every Sunday evening, review the upcoming week's calendar, kill low-value meetings, clarify the team's top 3 deliverables, and ensure your physical workspace is clear of clutter."
+        ],
+        checklist: [
+          "Keep at least 2 full days per week completely meeting-free for deep technical and product building.",
+          "Practice asynchronous updates: replace 30-minute status meetings with 3-bullet written memos.",
+          "Set a non-negotiable sleep schedule; sleep deprivation destroys risk assessment capabilities."
+        ]
+      }
+    ],
+    quiz: [
+      {
+        id: "q9",
+        question: "According to high-output founder management principles, when should deep creation work take place?",
+        options: [
+          "Late at night after answering 100 emails",
+          "During the first 90-120 minutes of the morning before reactive communication channels are opened",
+          "In 5-minute intervals between meetings",
+          "Only on weekends"
+        ],
+        correctIndex: 1,
+        explanation: "Protecting the first 90-120 minutes of the day ensures your highest cognitive energy is spent on the single most critical needle-moving problem.",
+        founderTakeaway: "Never sacrifice your morning creative peak to someone else's email inbox."
+      }
+    ],
+    actionPlan: [
+      "Implement the 3-Win morning protocol starting tomorrow.",
+      "Decline or convert at least 2 meetings this week into quick asynchronous written updates.",
+      "Conduct a 30-minute Sunday weekly reset to organize and plan your top strategic priorities."
+    ]
+  },
+  {
+    id: "epilogue",
+    number: 10,
     title: "Epilogue: The 10 Inviolable Laws of Startup Longevity",
     subtitle: "A Pocket Manifesto for the Relentless Founder",
     readTimeMinutes: 3,

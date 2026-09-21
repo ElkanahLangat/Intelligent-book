@@ -1,4 +1,4 @@
-export type ReadingTheme = 'light' | 'sepia' | 'dark' | 'midnight';
+export type ReadingTheme = 'deepblue' | 'light' | 'dark' | 'midnight' | 'sepia';
 export type FontFamily = 'serif' | 'sans' | 'mono';
 export type FontSize = 'sm' | 'base' | 'lg' | 'xl';
 
@@ -67,7 +67,7 @@ export interface Chapter {
   title: string;
   subtitle: string;
   readTimeMinutes: number;
-  category: 'Foundation' | 'Product' | 'Growth' | 'Operations' | 'Psychology';
+  category: 'Foundation' | 'Product' | 'Growth' | 'Operations' | 'Psychology' | 'Wealth & Money' | 'Habits';
   summary: string;
   introQuote: {
     quote: string;
@@ -87,10 +87,44 @@ export interface ReadingPreferences {
   autoScroll: boolean;
 }
 
+export interface ChecklistItem {
+  id: string;
+  stage: 'Stage 1: Problem Definition' | 'Stage 2: Customer Discovery' | 'Stage 3: Smoke Testing' | 'Stage 4: Unit Economics' | 'Stage 5: Go/No-Go Gate';
+  title: string;
+  action: string;
+  proTip: string;
+  falsifiableMetric: string;
+  completed: boolean;
+  notes?: string;
+}
+
+export interface DetailedCaseStudy {
+  id: string;
+  company: string;
+  founders: string;
+  category: 'Market Fit' | 'Funding' | 'Team & Pivot' | 'Premature Scaling' | 'Smoke Testing';
+  outcome: 'Success' | 'Pivot' | 'Cautionary Failure';
+  tagline: string;
+  metrics: { label: string; value: string }[];
+  theChallenge: string;
+  theTurningPoint: string;
+  keyLessons: string[];
+  founderQuote: {
+    quote: string;
+    author: string;
+    context: string;
+  };
+}
+
 export interface UserStats {
   completedChapters: string[];
   totalReadingSeconds: number;
   quizScores: Record<string, number>;
   streakDays: number;
   lastReadDate: string;
+  dailyReadingGoalMinutes: number;
+  todayReadingSeconds: number;
+  todayDate: string;
+  historyDates?: Record<string, number>;
 }
+

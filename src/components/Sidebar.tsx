@@ -1,6 +1,23 @@
 import React from 'react';
 import { Chapter, UserStats } from '../types';
-import { BookOpen, CheckCircle, Clock, Award, Bookmark, Search, Bot, Volume2, X, ArrowRight } from 'lucide-react';
+import {
+  BookOpen,
+  CheckCircle,
+  Clock,
+  Award,
+  Bookmark,
+  Search,
+  Bot,
+  Volume2,
+  X,
+  ArrowRight,
+  HardDrive,
+  ListChecks,
+  Briefcase,
+  Target,
+  Flame,
+  TrendingUp
+} from 'lucide-react';
 
 interface Props {
   chapters: Chapter[];
@@ -13,6 +30,11 @@ interface Props {
   onOpenSearch: () => void;
   onOpenAIMentor: () => void;
   onOpenAudio: () => void;
+  onOpenDrive: () => void;
+  onOpenChecklist: () => void;
+  onOpenCaseStudies: () => void;
+  onOpenStats?: () => void;
+  onUpdateGoal?: (minutes: number) => void;
 }
 
 export const Sidebar: React.FC<Props> = ({
@@ -25,10 +47,20 @@ export const Sidebar: React.FC<Props> = ({
   onOpenNotes,
   onOpenSearch,
   onOpenAIMentor,
-  onOpenAudio
+  onOpenAudio,
+  onOpenDrive,
+  onOpenChecklist,
+  onOpenCaseStudies,
+  onOpenStats,
+  onUpdateGoal
 }) => {
   const completedCount = userStats.completedChapters.length;
   const progressPercent = Math.round((completedCount / Math.max(1, chapters.length)) * 100);
+
+  const dailyGoalMinutes = userStats.dailyReadingGoalMinutes || 15;
+  const todayMinutes = (userStats.todayReadingSeconds || 0) / 60;
+  const goalPercent = Math.min(100, Math.round((todayMinutes / dailyGoalMinutes) * 100));
+  const isGoalMet = todayMinutes >= dailyGoalMinutes;
 
   const currentIdx = chapters.findIndex(c => c.id === currentChapterId);
   const nextChapter = currentIdx < chapters.length - 1 ? chapters[currentIdx + 1] : null;
@@ -74,12 +106,114 @@ export const Sidebar: React.FC<Props> = ({
           </button>
         </div>
 
+        {/* Daily Reading Goal Tracker Card in Sidebar */}
+        <div className="p-3 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/90 dark:bg-slate-900/60 shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              if (onOpenStats) onOpenStats();
+              if (window.innerWidth < 1024) onClose();
+            }}
+            className="w-full p-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/90 hover:border-blue-300 dark:hover:border-blue-700 transition-all text-left group cursor-pointer shadow-2xs"
+          >
+            <div className="flex items-center justify-between mb-1.5">
+              <div className="flex items-center gap-1.5">
+                <Target className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
+                <span className="text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                  Daily Goal
+                </span>
+              </div>
+              <div className="flex items-center gap-1 text-[10px] font-bold text-amber-600 dark:text-amber-400 bg-amber-50 dark:bg-amber-950/50 px-1.5 py-0.5 rounded border border-amber-200/60 dark:border-amber-900/40">
+                <Flame className="w-3 h-3 fill-amber-500 text-amber-500" />
+                <span>{userStats.streakDays}d Streak</span>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between text-xs mb-1.5">
+              <span className="font-semibold text-slate-600 dark:text-slate-400">
+                {todayMinutes.toFixed(1)}m of {dailyGoalMinutes}m read
+              </span>
+              <span className={`font-mono font-bold text-xs ${isGoalMet ? 'text-emerald-600 dark:text-emerald-400' : 'text-blue-600 dark:text-blue-400'}`}>
+                {goalPercent}%
+              </span>
+            </div>
+
+            {/* Daily Goal Progress Bar */}
+            <div className="h-2 w-full bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
+              <div
+                className={`h-full transition-all duration-500 ${
+                  isGoalMet
+                    ? 'bg-gradient-to-r from-emerald-500 to-teal-400'
+                    : 'bg-gradient-to-r from-blue-600 to-indigo-500'
+                }`}
+                style={{ width: `${goalPercent}%` }}
+              />
+            </div>
+
+            <div className="flex items-center justify-between mt-2 pt-1.5 border-t border-slate-100 dark:border-slate-700/60 text-[10px] text-slate-400">
+              <span className="flex items-center gap-1 group-hover:text-blue-600 transition-colors">
+                <TrendingUp className="w-3 h-3" />
+                View Full Stats Dashboard
+              </span>
+              <span className="text-blue-600 dark:text-blue-400 font-bold group-hover:underline">
+                Adjust Target →
+              </span>
+            </div>
+          </button>
+        </div>
+
+        {/* Action Hubs: Google Drive, Validation Checklist, Case Studies */}
+        <div className="p-3 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/40 space-y-1.5 shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              onOpenDrive();
+              if (window.innerWidth < 1024) onClose();
+            }}
+            className="w-full p-2 rounded-lg bg-blue-50/70 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-900/50 text-blue-800 dark:text-blue-200 hover:bg-blue-100 dark:hover:bg-blue-900/60 flex items-center justify-between text-xs font-semibold transition-colors cursor-pointer"
+          >
+            <div className="flex items-center gap-2">
+              <HardDrive className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <span>Google Drive Cloud Hub</span>
+            </div>
+            <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-200 dark:bg-blue-800 text-blue-800 dark:text-blue-100 font-bold">
+              Save
+            </span>
+          </button>
+
+          <div className="grid grid-cols-2 gap-1.5">
+            <button
+              type="button"
+              onClick={() => {
+                onOpenChecklist();
+                if (window.innerWidth < 1024) onClose();
+              }}
+              className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-emerald-500 hover:text-emerald-600 text-left flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <ListChecks className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+              <span className="text-[11px] font-bold truncate">Validation Checklist</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={() => {
+                onOpenCaseStudies();
+                if (window.innerWidth < 1024) onClose();
+              }}
+              className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-purple-500 hover:text-purple-600 text-left flex items-center gap-1.5 transition-colors cursor-pointer"
+            >
+              <Briefcase className="w-3.5 h-3.5 text-purple-600 shrink-0" />
+              <span className="text-[11px] font-bold truncate">5 Case Studies</span>
+            </button>
+          </div>
+        </div>
+
         {/* Quick Tools Grid */}
-        <div className="p-3 grid grid-cols-4 gap-1.5 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/70 dark:bg-slate-900/50 shrink-0">
+        <div className="p-2.5 grid grid-cols-4 gap-1.5 border-b border-slate-100 dark:border-slate-800/80 bg-slate-50/50 dark:bg-slate-900/30 shrink-0">
           <button
             type="button"
             onClick={onOpenSearch}
-            className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-blue-500 hover:text-blue-600 text-center flex flex-col items-center gap-1 transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-blue-500 hover:text-blue-600 text-center flex flex-col items-center gap-1 transition-colors cursor-pointer"
             title="Search eBook"
           >
             <Search className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
@@ -89,7 +223,7 @@ export const Sidebar: React.FC<Props> = ({
           <button
             type="button"
             onClick={onOpenAIMentor}
-            className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-blue-500 hover:text-blue-600 text-center flex flex-col items-center gap-1 transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-blue-500 hover:text-blue-600 text-center flex flex-col items-center gap-1 transition-colors cursor-pointer"
             title="AI Founder Mentor"
           >
             <Bot className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
@@ -99,7 +233,7 @@ export const Sidebar: React.FC<Props> = ({
           <button
             type="button"
             onClick={onOpenNotes}
-            className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-blue-500 hover:text-blue-600 text-center flex flex-col items-center gap-1 transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-blue-500 hover:text-blue-600 text-center flex flex-col items-center gap-1 transition-colors cursor-pointer"
             title="Highlights & Notes"
           >
             <Bookmark className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
@@ -109,13 +243,14 @@ export const Sidebar: React.FC<Props> = ({
           <button
             type="button"
             onClick={onOpenAudio}
-            className="p-2 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-blue-500 hover:text-blue-600 text-center flex flex-col items-center gap-1 transition-colors cursor-pointer"
+            className="p-1.5 rounded-lg bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:border-blue-500 hover:text-blue-600 text-center flex flex-col items-center gap-1 transition-colors cursor-pointer"
             title="Audio Narration"
           >
             <Volume2 className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400" />
             <span className="text-[10px] font-semibold">Listen</span>
           </button>
         </div>
+
 
         {/* Table of Contents List */}
         <div className="flex-1 overflow-y-auto p-4 space-y-1">
